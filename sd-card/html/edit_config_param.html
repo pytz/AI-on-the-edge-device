@@ -423,6 +423,21 @@ textarea {
 				Set on "false" to ensure, that only positive changes are accepted (typically for counter)
 			</td>
 		</tr>
+		<tr>
+			<td class="indent1">
+				<input type="checkbox" id="PostProcessing_AllowNegativeRatesOnOverflow_enabled" value="1"  onclick = 'InvertEnableItem("PostProcessing", "AllowNegativeRatesOnOverflow")' unchecked >
+				<label for=PostProcessing_AllowNegativeRatesOnOverflow_enabled><class id="PostProcessing_AllowNegativeRatesOnOverflow_text" style="color:black;">AllowNegativeRatesOnOverflow</class></label>
+			</td>
+			<td>
+				<select id="PostProcessing_AllowNegativeRatesOnOverflow_value1">
+					<option value="true" selected>true</option>
+					<option value="false" >false</option>
+				</select>
+			</td>
+			<td style="font-size: 80%;">
+				Set on "true" to allow negative changes in case of an overflow (e.g. 999 to 000) ignoring the setting of AllowNegativeRates but regarding the MaxRateValue
+			</td>
+		</tr>
 		<tr class="expert"  id="ex12">
 			<td class="indent1">
 				<input type="checkbox" id="PostProcessing_ErrorMessage_enabled" value="1"  onclick = 'InvertEnableItem("PostProcessing", "ErrorMessage")' unchecked >
@@ -1819,6 +1834,7 @@ function UpdateInput() {
 	WriteParameter(param, category, "PostProcessing", "PreValueUse", true);		
 	WriteParameter(param, category, "PostProcessing", "PreValueAgeStartup", true);		
 	WriteParameter(param, category, "PostProcessing", "AllowNegativeRates", true);
+	WriteParameter(param, category, "PostProcessing", "AllowNegativeRatesOnOverflow", true);
 	WriteParameter(param, category, "PostProcessing", "ErrorMessage", true);
 	WriteParameter(param, category, "PostProcessing", "CheckDigitIncreaseConsistency", true);
 
@@ -1942,6 +1958,7 @@ function ReadParameterAll()
 	ReadParameter(param, "PostProcessing", "PreValueUse", true);		
 	ReadParameter(param, "PostProcessing", "PreValueAgeStartup", true);		
 	ReadParameter(param, "PostProcessing", "AllowNegativeRates", true);
+	ReadParameter(param, "PostProcessing", "AllowNegativeRatesOnOverflow", true);
 	ReadParameter(param, "PostProcessing", "ErrorMessage", true);
 	ReadParameter(param, "PostProcessing", "CheckDigitIncreaseConsistency", true);
 

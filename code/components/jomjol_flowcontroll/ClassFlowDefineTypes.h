@@ -32,6 +32,7 @@ struct NumberPost {
     bool ErrorMessage;
     bool PreValueOkay;
     bool AllowNegativeRates;
+    bool AllowNegativeRatesOnOverflow;
     bool checkDigitIncreaseConsistency;
     time_t lastvalue;
     string timeStamp;

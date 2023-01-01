@@ -526,9 +526,22 @@ bool ClassFlowPostProcessing::ReadParameter(FILE* pfile, string& aktparamgraph)
                     NUMBERS[_n]->AllowNegativeRates = true;
         }
         if ((toUpper(_param) == "ERRORMESSAGE") && (splitted.size() > 1))
+        if ((toUpper(_param) == "ALLOWNEGATIVERATESONOVERFLOW") && (splitted.size() > 1))
+        {
+            if (toUpper(splitted[1]) == "TRUE")
+                for (_n = 0; _n < NUMBERS.size(); ++_n)
+                    NUMBERS[_n]->AllowNegativeRatesOnOverflow = true;
+        }
+        if ((toUpper(_param) == "ERRORMESSAGE") && (splitted.size() > 1))
         {
             if (toUpper(splitted[1]) == "TRUE")
                 ErrorMessage = true;
+        }
+        if ((toUpper(_param) == "ALLOWNEGATIVERATESONOVERFLOW") && (splitted.size() > 1))
+        {
+            if (toUpper(splitted[1]) == "TRUE")
+                for (_n = 0; _n < NUMBERS.size(); ++_n)
+                    NUMBERS[_n]->AllowNegativeRatesOnOverflow = true;
         }
         if ((toUpper(_param) == "IGNORELEADINGNAN") && (splitted.size() > 1))
         {
@@ -594,7 +607,7 @@ void ClassFlowPostProcessing::InitNUMBERS()
         else
             _number->AnzahlAnalog = 0;
 
-        _number->ReturnRawValue = ""; // Raw value (with N & leading 0).    
+        _number->ReturnRawValue = ""; // Raw value (with N & leading 0).
         _number->ReturnValue = ""; // corrected return value, possibly with error message
         _number->ErrorMessageText = ""; // Error message for consistency check
         _number->ReturnPreValue = "";
@@ -613,7 +626,7 @@ void ClassFlowPostProcessing::InitNUMBERS()
         _number->FlowRateAct = 0; // m3 / min
         _number->PreValue = 0; // last value read out well
         _number->Value = 0; // last value read out, incl. corrections
-        _number->ReturnRawValue = ""; // raw value (with N & leading 0)    
+        _number->ReturnRawValue = ""; // raw value (with N & leading 0)
         _number->ReturnValue = ""; // corrected return value, possibly with error message
         _number->ErrorMessageText = ""; // Error message for consistency check
 
@@ -801,6 +814,30 @@ bool ClassFlowPostProcessing::doFlow(string zwtime)
             ESP_LOGD(TAG, "After checkDigitIncreaseConsistency: Value %f", NUMBERS[j]->Value);
         #endif
                
+        // Check for occurance of overflow if allowed (currently only for digital numbers)
+        bool overflowDetected = false;
+        double overflowDistance = 0;
+        if (NUMBERS[j]->AllowNegativeRatesOnOverflow && (NUMBERS[j]->Value < NUMBERS[j]->PreValue) && (NUMBERS[j]->AnzahlDigital > 0)){
+            // Calculate theoretical maximum
+            double maximumValue = 0;
+            int numberOfDigits = NUMBERS[j]->AnzahlDigital;
+            if (NUMBERS[j]->isExtendedResolution){
+                numberOfDigits++;
+            }
+            for (int digitPos = 0; digitPos < numberOfDigits; digitPos++){
+                maximumValue += 9 * pow(10, digitPos);
+            }
+            maximumValue = maximumValue / pow10(NUMBERS[j]->Nachkomma);
+
+            double overflowDistance = (maximumValue - NUMBERS[j]->PreValue) + NUMBERS[j]->Value;
+            double distanceNegative = NUMBERS[j]->PreValue - NUMBERS[j]->Value;
+            // Sanity check: an overflow is plausible if the negative distance is larger than the positive distance
+            overflowDetected = (overflowDistance < distanceNegative);
+        #ifdef SERIAL_DEBUG
+            ESP_LOGD(TAG, "Overflow detection: maximumValue= %f, overflowDistance=%f, preValue=%f, acceptOverflow=%d", maximumValue,
+            overflowDistance, distanceNegative, acceptOverflow);
+        #endif
+        }
 
         if (!NUMBERS[j]->AllowNegativeRates)
         {
@@ -815,8 +852,8 @@ bool ClassFlowPostProcessing::doFlow(string zwtime)
                 if (NUMBERS[j]->Value >= (NUMBERS[j]->PreValue-(2/pow(10, NUMBERS[j]->Nachkomma))) && NUMBERS[j]->isExtendedResolution) {
                     NUMBERS[j]->Value = NUMBERS[j]->PreValue;
                     NUMBERS[j]->ReturnValue = to_string(NUMBERS[j]->PreValue);
-                } else {
-                    NUMBERS[j]->ErrorMessageText = NUMBERS[j]->ErrorMessageText + "Neg. Rate - Read: " + zwvalue + " - Raw: " + NUMBERS[j]->ReturnRawValue + " - Pre: " + RundeOutput(NUMBERS[j]->PreValue, NUMBERS[j]->Nachkomma) + " "; 
+                } else if (!overflowDetected) {
+                    NUMBERS[j]->ErrorMessageText += NUMBERS[j]->ErrorMessageText + "Neg. Rate - Read: " + zwvalue + " - Raw: " + NUMBERS[j]->ReturnRawValue + " - Pre: " + RundeOutput(NUMBERS[j]->PreValue, NUMBERS[j]->Nachkomma) + " ";
                     NUMBERS[j]->Value = NUMBERS[j]->PreValue;
                     NUMBERS[j]->ReturnValue = "";
 
@@ -833,7 +870,11 @@ bool ClassFlowPostProcessing::doFlow(string zwtime)
         #endif
         double difference = difftime(imagetime, NUMBERS[j]->lastvalue);      // in seconds
         difference /= 60;  
-        NUMBERS[j]->FlowRateAct = (NUMBERS[j]->Value - NUMBERS[j]->PreValue) / difference;
+        if (overflowDetected){
+            NUMBERS[j]->FlowRateAct = overflowDistance / difference;
+        } else {
+            NUMBERS[j]->FlowRateAct = (NUMBERS[j]->Value - NUMBERS[j]->PreValue) / difference;
+        }
         NUMBERS[j]->ReturnRateValue =  to_string(NUMBERS[j]->FlowRateAct);
 
         if (NUMBERS[j]->useMaxRateValue && PreValueUse && NUMBERS[j]->PreValueOkay)
@@ -841,6 +882,8 @@ bool ClassFlowPostProcessing::doFlow(string zwtime)
             double _ratedifference;  
             if (NUMBERS[j]->RateType == RateChange)
                 _ratedifference = NUMBERS[j]->FlowRateAct;
+            else if (overflowDetected)
+                _ratedifference = overflowDistance;
             else
                 _ratedifference = (NUMBERS[j]->Value - NUMBERS[j]->PreValue);
 
@@ -862,7 +905,11 @@ bool ClassFlowPostProcessing::doFlow(string zwtime)
         #ifdef SERIAL_DEBUG
            ESP_LOGD(TAG, "After MaxRateCheck: Value %f", NUMBERS[j]->Value);
         #endif
-        NUMBERS[j]->ReturnChangeAbsolute = RundeOutput(NUMBERS[j]->Value - NUMBERS[j]->PreValue, NUMBERS[j]->Nachkomma);
+        if (overflowDetected){
+            NUMBERS[j]->ReturnChangeAbsolute = RundeOutput(overflowDistance, NUMBERS[j]->Nachkomma);
+        } else {
+            NUMBERS[j]->ReturnChangeAbsolute = RundeOutput(NUMBERS[j]->Value - NUMBERS[j]->PreValue, NUMBERS[j]->Nachkomma);
+        }
         NUMBERS[j]->PreValue = NUMBERS[j]->Value;
         NUMBERS[j]->PreValueOkay = true;
         NUMBERS[j]->lastvalue = imagetime;
@@ -931,7 +978,7 @@ void ClassFlowPostProcessing::UpdateNachkommaDecimalShift()
         {
 //            ESP_LOGD(TAG, "Nur analog");
             NUMBERS[j]->DecimalShift = NUMBERS[j]->DecimalShiftInitial;
-            if (NUMBERS[j]->isExtendedResolution && flowAnalog->isExtendedResolution()) 
+            if (NUMBERS[j]->isExtendedResolution && flowAnalog->isExtendedResolution())
                 NUMBERS[j]->DecimalShift = NUMBERS[j]->DecimalShift-1;
 
             NUMBERS[j]->Nachkomma = -NUMBERS[j]->DecimalShift;
