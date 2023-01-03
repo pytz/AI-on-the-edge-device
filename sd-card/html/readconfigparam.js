@@ -1,7 +1,3 @@
-function readconfig_Version(){
-     return "1.0.0 - 20200910";
- }
-
 var config_gesamt = "";
 var config_split = [];
 var param = [];
@@ -12,7 +8,7 @@ var REFERENCES = new Array(0);
 
 
 function getNUMBERSList() {
-	_basepath = getbasepath(); 
+	_domainname = getDomainname(); 
      var datalist = "";
 
 	var xhttp = new XMLHttpRequest();
@@ -25,14 +21,14 @@ function getNUMBERSList() {
 	 });
 
 	 try {
-		  url = _basepath + '/editflow?task=namenumbers';     
+		  url = _domainname + '/editflow?task=namenumbers';     
 		  xhttp.open("GET", url, false);
 		  xhttp.send();
 
 	 }
 	 catch (error)
 	 {
-               alert("Loading Hostname failed");
+//               alert("Loading Hostname failed");
 	 }
 
       datalist = datalist.split("\t");
@@ -43,7 +39,7 @@ function getNUMBERSList() {
 
 
 function getDATAList() {
-	_basepath = getbasepath(); 
+	_domainname = getDomainname(); 
      tflitelist = "";
 
 	var xhttp = new XMLHttpRequest();
@@ -56,7 +52,7 @@ function getDATAList() {
 	 });
 
 	 try {
-		  url = _basepath + '/editflow?task=data';     
+		  url = _domainname + '/editflow?task=data';     
 		  xhttp.open("GET", url, false);
 		  xhttp.send();
 
@@ -74,7 +70,7 @@ function getDATAList() {
 
 
 function getTFLITEList() {
-	_basepath = getbasepath(); 
+	_domainname = getDomainname(); 
      tflitelist = "";
 
 	var xhttp = new XMLHttpRequest();
@@ -87,7 +83,7 @@ function getTFLITEList() {
 	 });
 
 	 try {
-		  url = _basepath + '/editflow?task=tflite';     
+		  url = _domainname + '/editflow?task=tflite';     
 		  xhttp.open("GET", url, false);
 		  xhttp.send();
 
@@ -563,7 +559,7 @@ function isCommented(input)
           return [isComment, input];
      }    
 
-function SaveConfigToServer(_basepath){
+function SaveConfigToServer(_domainname){
      // leere Zeilen am Ende löschen
      var zw = config_split.length - 1;
      while (config_split[zw] == "") {
@@ -576,8 +572,8 @@ function SaveConfigToServer(_basepath){
           config_gesamt = config_gesamt + config_split[i] + "\n";
      } 
 
-     FileDeleteOnServer("/config/config.ini", _basepath);
-     FileSendContent(config_gesamt, "/config/config.ini", _basepath);          
+     FileDeleteOnServer("/config/config.ini", _domainname);
+     FileSendContent(config_gesamt, "/config/config.ini", _domainname);          
 }
 	 
 function getConfig() {
@@ -666,19 +662,19 @@ function getNUMBERS(_name, _type, _create = true)
 
  
 
-function CopyReferenceToImgTmp(_basepath)
+function CopyReferenceToImgTmp(_domainname)
 {
      for (index = 0; index < 2; ++index)
      {
           _filenamevon = REFERENCES[index]["name"];
           _filenamenach = _filenamevon.replace("/config/", "/img_tmp/");
-          FileDeleteOnServer(_filenamenach, _basepath);
-          FileCopyOnServer(_filenamevon, _filenamenach, _basepath);
+          FileDeleteOnServer(_filenamenach, _domainname);
+          FileCopyOnServer(_filenamevon, _filenamenach, _domainname);
      
           _filenamevon = _filenamevon.replace(".jpg", "_org.jpg");
           _filenamenach = _filenamenach.replace(".jpg", "_org.jpg");
-          FileDeleteOnServer(_filenamenach, _basepath);
-          FileCopyOnServer(_filenamevon, _filenamenach, _basepath);
+          FileDeleteOnServer(_filenamenach, _domainname);
+          FileCopyOnServer(_filenamevon, _filenamenach, _domainname);
      }
 }
 
@@ -687,18 +683,18 @@ function GetReferencesInfo(){
 }
 
 
-function UpdateConfigReference(_basepath){
+function UpdateConfigReference(_domainname){
      for (var index = 0; index < 2; ++index)
      {
           _filenamenach = REFERENCES[index]["name"];
           _filenamevon = _filenamenach.replace("/config/", "/img_tmp/");
-          FileDeleteOnServer(_filenamenach, _basepath);
-          FileCopyOnServer(_filenamevon, _filenamenach, _basepath);
+          FileDeleteOnServer(_filenamenach, _domainname);
+          FileCopyOnServer(_filenamevon, _filenamenach, _domainname);
      
           _filenamenach = _filenamenach.replace(".jpg", "_org.jpg");
           _filenamevon = _filenamevon.replace(".jpg", "_org.jpg");
-          FileDeleteOnServer(_filenamenach, _basepath);
-          FileCopyOnServer(_filenamevon, _filenamenach, _basepath);
+          FileDeleteOnServer(_filenamenach, _domainname);
+          FileCopyOnServer(_filenamevon, _filenamenach, _domainname);
 
      }
 }

@@ -6,10 +6,26 @@
 ////          Global definitions         ////
 /////////////////////////////////////////////
 
+    /* Uncomment this to generate task list with stack sizes using the /heap handler
+        PLEASE BE AWARE: The following CONFIG parameters have to to be set in 
+        sdkconfig.defaults before use of this function is possible!!
+
+        CONFIG_FREERTOS_USE_TRACE_FACILITY=1
+        CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS=y
+        CONFIG_FREERTOS_VTASKLIST_INCLUDE_COREID=y
+    */
+    // server_tflite.cpp
+    //#define TASK_ANALYSIS_ON
+    
+
     /* Uncomment this to keep the logfile open for appending.
     * If commented out, the logfile gets opened/closed for each log measage (old behaviour) */
     // ClassLogFile
     //#define KEEP_LOGFILE_OPEN_FOR_APPENDING
+
+    //compiler optimization for tflite-micro-esp-examples
+    #define XTENSA
+    #define CONFIG_IDF_TARGET_ARCH_XTENSA
 
 
     //ClassControllCamera + ClassFlowMakeImage + connect_wlan + main
@@ -42,7 +58,7 @@
      #define FILE_PATH_MAX (255) //Max length a file path can have on storage
     
     //server_file +(ota_page.html + upload_script.html)
-    #define MAX_FILE_SIZE   (8000*1024) // 8 MB Max size of an individual file. Make sure this value is same as that set in upload_script.html
+    #define MAX_FILE_SIZE   (8000*1024) // 8 MB Max size of an individual file. Make sure this value is same as that set in upload_script.html and ota_page.html!
     #define MAX_FILE_SIZE_STR "8MB"
          
     #define LOGFILE_LAST_PART_BYTES SERVER_FILER_SCRATCH_BUFSIZE * 20 // 80 kBytes  // Size of partial log file to return 
