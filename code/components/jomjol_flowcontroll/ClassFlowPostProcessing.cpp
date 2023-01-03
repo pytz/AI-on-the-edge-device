@@ -828,7 +828,7 @@ bool ClassFlowPostProcessing::doFlow(string zwtime)
             }
             maximumValue = maximumValue / pow10(NUMBERS[j]->Nachkomma);
             
-            double overflowDistance = (maximumValue - NUMBERS[j]->PreValue) + NUMBERS[j]->Value;
+            overflowDistance = (maximumValue - NUMBERS[j]->PreValue) + NUMBERS[j]->Value;
             double distanceNegative = NUMBERS[j]->PreValue - NUMBERS[j]->Value;
             // Sanity check: an overflow is plausible if the negative distance is larger than the positive distance
             overflowDetected = (overflowDistance < distanceNegative);
