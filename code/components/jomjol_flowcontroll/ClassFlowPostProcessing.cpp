@@ -600,7 +600,7 @@ void ClassFlowPostProcessing::InitNUMBERS()
         else
             _number->AnzahlAnalog = 0;
 
-        _number->ReturnRawValue = ""; // Raw value (with N & leading 0).    
+        _number->ReturnRawValue = ""; // Raw value (with N & leading 0).
         _number->ReturnValue = ""; // corrected return value, possibly with error message
         _number->ErrorMessageText = ""; // Error message for consistency check
         _number->ReturnPreValue = "";
@@ -619,7 +619,7 @@ void ClassFlowPostProcessing::InitNUMBERS()
         _number->FlowRateAct = 0; // m3 / min
         _number->PreValue = 0; // last value read out well
         _number->Value = 0; // last value read out, incl. corrections
-        _number->ReturnRawValue = ""; // raw value (with N & leading 0)    
+        _number->ReturnRawValue = ""; // raw value (with N & leading 0)
         _number->ReturnValue = ""; // corrected return value, possibly with error message
         _number->ErrorMessageText = ""; // Error message for consistency check
 
@@ -822,7 +822,7 @@ bool ClassFlowPostProcessing::doFlow(string zwtime)
             }
             maximumValue = maximumValue / pow10(NUMBERS[j]->Nachkomma);
 
-            double overflowDistance = (maximumValue - NUMBERS[j]->PreValue) + NUMBERS[j]->Value;
+            overflowDistance = (maximumValue - NUMBERS[j]->PreValue) + NUMBERS[j]->Value;
             double distanceNegative = NUMBERS[j]->PreValue - NUMBERS[j]->Value;
             // Sanity check: an overflow is plausible if the negative distance is larger than the positive distance
             overflowDetected = (overflowDistance < distanceNegative);
@@ -846,7 +846,7 @@ bool ClassFlowPostProcessing::doFlow(string zwtime)
                     NUMBERS[j]->Value = NUMBERS[j]->PreValue;
                     NUMBERS[j]->ReturnValue = to_string(NUMBERS[j]->PreValue);
                 } else if (!overflowDetected) {
-                    NUMBERS[j]->ErrorMessageText = NUMBERS[j]->ErrorMessageText + "Neg. Rate - Read: " + zwvalue + " - Raw: " + NUMBERS[j]->ReturnRawValue + " - Pre: " + RundeOutput(NUMBERS[j]->PreValue, NUMBERS[j]->Nachkomma) + " "; 
+                    NUMBERS[j]->ErrorMessageText = NUMBERS[j]->ErrorMessageText + "Neg. Rate - Read: " + zwvalue + " - Raw: " + NUMBERS[j]->ReturnRawValue + " - Pre: " + RundeOutput(NUMBERS[j]->PreValue, NUMBERS[j]->Nachkomma) + " ";
                     NUMBERS[j]->Value = NUMBERS[j]->PreValue;
                     NUMBERS[j]->ReturnValue = "";
 
@@ -971,7 +971,7 @@ void ClassFlowPostProcessing::UpdateNachkommaDecimalShift()
         {
 //            ESP_LOGD(TAG, "Nur analog");
             NUMBERS[j]->DecimalShift = NUMBERS[j]->DecimalShiftInitial;
-            if (NUMBERS[j]->isExtendedResolution && flowAnalog->isExtendedResolution()) 
+            if (NUMBERS[j]->isExtendedResolution && flowAnalog->isExtendedResolution())
                 NUMBERS[j]->DecimalShift = NUMBERS[j]->DecimalShift-1;
 
             NUMBERS[j]->Nachkomma = -NUMBERS[j]->DecimalShift;
