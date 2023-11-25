@@ -611,6 +611,19 @@
 
 		<tr>
 			<td class="indent2">
+				<label><class id="PostProcessing_AllowNegativeRatesOnOverflow_text" style="color:black;">Allow Negative Rates On Overflow</class></label>
+			</td>
+			<td>
+				<select id="PostProcessing_AllowNegativeRatesOnOverflow_value1">
+					<option value="true">true</option>
+					<option value="false" selected>false</option>
+				</select>
+			</td>
+			<td>$TOOLTIP_PostProcessing_NUMBER.AllowNegativeRatesOnOverflow</td>
+		</tr>
+
+		<tr>
+			<td class="indent2">
 				<input type="checkbox" id="PostProcessing_DecimalShift_enabled" value="1"  onclick = 'InvertEnableItem("PostProcessing", "DecimalShift")' unchecked >
 				<label for=PostProcessing_DecimalShift_enabled><class id="PostProcessing_DecimalShift_text" style="color:black;">Decimal Shift</class></label>
 			</td>
@@ -2009,6 +2022,7 @@ function UpdateInputIndividual(sel)
         ReadParameter(param, "PostProcessing", "ExtendedResolution", false, NUNBERSAkt);
         ReadParameter(param, "PostProcessing", "IgnoreLeadingNaN", false, NUNBERSAkt);
         ReadParameter(param, "PostProcessing", "AllowNegativeRates", false, NUNBERSAkt);
+		ReadParameter(param, "PostProcessing", "AllowNegativeRatesOnOverflow", false, NUNBERSAkt);
         ReadParameter(param, "InfluxDB", "Field", true, NUNBERSAkt);
         ReadParameter(param, "InfluxDBv2", "Field", true, NUNBERSAkt);
         ReadParameter(param, "InfluxDB", "Measurement", true, NUNBERSAkt);
@@ -2024,6 +2038,7 @@ function UpdateInputIndividual(sel)
     WriteParameter(param, category, "PostProcessing", "ExtendedResolution", false, NUNBERSAkt);
     WriteParameter(param, category, "PostProcessing", "IgnoreLeadingNaN", false, NUNBERSAkt);
     WriteParameter(param, category, "PostProcessing", "AllowNegativeRates", false, NUNBERSAkt);
+	WriteParameter(param, category, "PostProcessing", "AllowNegativeRatesOnOverflow", true, NUNBERSAkt);
     WriteParameter(param, category, "InfluxDB", "Field", true, NUNBERSAkt);
     WriteParameter(param, category, "InfluxDBv2", "Field", true, NUNBERSAkt);
     WriteParameter(param, category, "InfluxDB", "Measurement", true, NUNBERSAkt);

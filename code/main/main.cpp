@@ -605,6 +605,12 @@ void migrateConfiguration(void) {
                 migrated = migrated | replaceString(configLines[i], ";", ""); // Enable it
             }
 
+            /* AllowNegativeRatesOnOverflow has a <NUMBER> as prefix! */
+            if (isInString(configLines[i], "AllowNegativeRatesOnOverflow") && isInString(configLines[i], ";")) { // It is the parameter "AllowNegativeRatesOnOverflow" and it is commented out
+                migrated = migrated | replaceString(configLines[i], "true", "false"); // Set it to its default value
+                migrated = migrated | replaceString(configLines[i], ";", ""); // Enable it
+            }
+
             /* IgnoreLeadingNaN has a <NUMBER> as prefix! */
             if (isInString(configLines[i], "IgnoreLeadingNaN") && isInString(configLines[i], ";")) { // It is the parameter "IgnoreLeadingNaN" and it is commented out
                 migrated = migrated | replaceString(configLines[i], "true", "false"); // Set it to its default value

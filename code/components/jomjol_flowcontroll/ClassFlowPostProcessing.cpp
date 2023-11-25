@@ -444,7 +444,34 @@ void ClassFlowPostProcessing::handleAllowNegativeRate(string _decsep, string _va
     }
 }
 
+void ClassFlowPostProcessing::handleAllowNegativeRatesOnOverflow(string _decsep, string _value)
+{
+    string _digit, _decpos;
+    int _pospunkt = _decsep.find_first_of(".");
+//    ESP_LOGD(TAG, "Name: %s, Pospunkt: %d", _decsep.c_str(), _pospunkt);
+    if (_pospunkt > -1)
+        _digit = _decsep.substr(0, _pospunkt);
+    else
+        _digit = "default";
+  
+    for (int j = 0; j < NUMBERS.size(); ++j)
+    {
+        bool _rt = false;
 
+        if (toUpper(_value) == "TRUE")
+            _rt = true;
+
+        if (_digit == "default")                        // Set to default first (if nothing else is set)
+        {
+            NUMBERS[j]->AllowNegativeRatesOnOverflow = _rt;
+        }
+
+        if (NUMBERS[j]->name == _digit)
+        {
+            NUMBERS[j]->AllowNegativeRatesOnOverflow = _rt;
+        }
+    }
+}
 
 void ClassFlowPostProcessing::handleMaxRateType(string _decsep, string _value)
 {
@@ -580,6 +607,10 @@ bool ClassFlowPostProcessing::ReadParameter(FILE* pfile, string& aktparamgraph)
                     NUMBERS[_n]->AllowNegativeRates = true;
 */
         }
+        if ((toUpper(_param) == "ALLOWNEGATIVERATESONOVERFLOW") && (splitted.size() > 1))
+        {
+            handleAllowNegativeRatesOnOverflow(splitted[0], splitted[1]);
+        }
         if ((toUpper(_param) == "ERRORMESSAGE") && (splitted.size() > 1))
         {
             if (toUpper(splitted[1]) == "TRUE")
@@ -655,6 +686,7 @@ void ClassFlowPostProcessing::InitNUMBERS()
         _number->ReturnPreValue = "";
         _number->PreValueOkay = false;
         _number->AllowNegativeRates = false;
+        _number->AllowNegativeRatesOnOverflow = false;
         _number->MaxRateValue = 0.1;
         _number->RateType = AbsoluteChange;
         _number->useMaxRateValue = false;
@@ -861,6 +893,37 @@ bool ClassFlowPostProcessing::doFlow(string zwtime)
             ESP_LOGD(TAG, "After checkDigitIncreaseConsistency: Value %f", NUMBERS[j]->Value);
         #endif
 
+        // Check for occurance of overflow if allowed (currently only for digital numbers)
+        bool overflowDetected = false;
+        double overflowDistance = 0;
+        if (NUMBERS[j]->AllowNegativeRatesOnOverflow && (NUMBERS[j]->Value < NUMBERS[j]->PreValue && (NUMBERS[j]->AnzahlDigital > 0))){
+            // Calculate theoretical maximum of the meter (to check for passing that value)
+            double maximumValue = 0;
+            int numberOfDigits = NUMBERS[j]->AnzahlDigital;
+            if (NUMBERS[j]->isExtendedResolution){
+                numberOfDigits++;
+            }
+            for (int digitPos = 0; digitPos < numberOfDigits; digitPos++){
+                maximumValue += 9 * pow(10, digitPos);
+            }
+            maximumValue = maximumValue / pow10(NUMBERS[j]->Nachkomma);
+
+            overflowDistance = (maximumValue - NUMBERS[j]->PreValue) + NUMBERS[j]->Value;
+            double distanceNegative = NUMBERS[j]->PreValue - NUMBERS[j]->Value;
+            // Sanity check: an overflow is plausible if the negative distance is larger than the positive distance
+            // e.g. a PreValue of 7.2 and a value of 1.3 could mean:
+            //   1. a negative rate of 5.9 (distanceNegative)
+            //   2. a positive rate of 4.1 (overflowDistance)
+            // In this example an overflow is more plausible than the negative rate.
+            // This check might not cause the desired behaviour if negative rate is also allowed an a large
+            // negative rate is to be expected.
+            overflowDetected = (overflowDistance < distanceNegative);
+        #ifdef SERIAL_DEBUG
+            ESP_LOGD(TAG, "Overflow detection: maximumValue= %f, overflowDistance=%f, preValue=%f", maximumValue,
+            overflowDistance, distanceNegative);
+        #endif
+        }
+
         if (!NUMBERS[j]->AllowNegativeRates)
         {
             LogFile.WriteToFile(ESP_LOG_DEBUG, TAG, "handleAllowNegativeRate for device: " + NUMBERS[j]->name);
@@ -876,7 +939,7 @@ bool ClassFlowPostProcessing::doFlow(string zwtime)
                 if (NUMBERS[j]->Value >= (NUMBERS[j]->PreValue-(2/pow(10, NUMBERS[j]->Nachkomma))) && NUMBERS[j]->isExtendedResolution) {
                     NUMBERS[j]->Value = NUMBERS[j]->PreValue;
                     NUMBERS[j]->ReturnValue = to_string(NUMBERS[j]->PreValue);
-                } else {
+                } else if (!overflowDetected) {
                     NUMBERS[j]->ErrorMessageText = NUMBERS[j]->ErrorMessageText + "Neg. Rate - Read: " + zwvalue + " - Raw: " + NUMBERS[j]->ReturnRawValue + " - Pre: " + RundeOutput(NUMBERS[j]->PreValue, NUMBERS[j]->Nachkomma) + " "; 
                     NUMBERS[j]->Value = NUMBERS[j]->PreValue;
                     NUMBERS[j]->ReturnValue = "";
@@ -895,8 +958,12 @@ bool ClassFlowPostProcessing::doFlow(string zwtime)
             ESP_LOGD(TAG, "After AllowNegativeRates: Value %f", NUMBERS[j]->Value);
         #endif
 
-        difference /= 60;  
-        NUMBERS[j]->FlowRateAct = (NUMBERS[j]->Value - NUMBERS[j]->PreValue) / difference;
+        difference /= 60;
+        if (overflowDetected){
+            NUMBERS[j]->FlowRateAct = overflowDistance / difference;
+        } else {
+            NUMBERS[j]->FlowRateAct = (NUMBERS[j]->Value - NUMBERS[j]->PreValue) / difference;
+        }
         NUMBERS[j]->ReturnRateValue =  to_string(NUMBERS[j]->FlowRateAct);
 
         if (NUMBERS[j]->useMaxRateValue && PreValueUse && NUMBERS[j]->PreValueOkay)
@@ -904,6 +971,8 @@ bool ClassFlowPostProcessing::doFlow(string zwtime)
             double _ratedifference;  
             if (NUMBERS[j]->RateType == RateChange)
                 _ratedifference = NUMBERS[j]->FlowRateAct;
+            else if (overflowDetected)
+                _ratedifference = overflowDistance;
             else
                 _ratedifference = (NUMBERS[j]->Value - NUMBERS[j]->PreValue);
 
@@ -926,7 +995,11 @@ bool ClassFlowPostProcessing::doFlow(string zwtime)
            ESP_LOGD(TAG, "After MaxRateCheck: Value %f", NUMBERS[j]->Value);
         #endif
         
-        NUMBERS[j]->ReturnChangeAbsolute = RundeOutput(NUMBERS[j]->Value - NUMBERS[j]->PreValue, NUMBERS[j]->Nachkomma);
+        if (overflowDetected){
+            NUMBERS[j]->ReturnChangeAbsolute = RundeOutput(overflowDistance, NUMBERS[j]->Nachkomma);
+        } else {
+            NUMBERS[j]->ReturnChangeAbsolute = RundeOutput(NUMBERS[j]->Value - NUMBERS[j]->PreValue, NUMBERS[j]->Nachkomma);
+        }
         NUMBERS[j]->PreValue = NUMBERS[j]->Value;
         NUMBERS[j]->PreValueOkay = true;
         NUMBERS[j]->lastvalue = imagetime;

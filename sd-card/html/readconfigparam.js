@@ -163,6 +163,7 @@ function ParseConfig() {
      ParamAddValue(param, catname, "PreValueUse");
      ParamAddValue(param, catname, "PreValueAgeStartup");
      ParamAddValue(param, catname, "AllowNegativeRates", 1, true, "true");
+     ParamAddValue(param, catname, "AllowNegativeRatesOnOverflow", 1, true, "false");
      ParamAddValue(param, catname, "MaxRateValue", 1, true);
      ParamAddValue(param, catname, "MaxRateType", 1, true);
      ParamAddValue(param, catname, "ExtendedResolution", 1, true, "false");
